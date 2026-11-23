@@ -1,13 +1,22 @@
-FROM eclipse-temurin:21-jdk
+
+FROM eclipse-temurin:21-jdk AS build
+
 WORKDIR /app
-COPY . /app
-# Finds the source even if the hosting platform uses a nested project directory.
-RUN SOURCE="$(find /app -path '*/src/main/java/com/veterinaria/ApiServer.java' -print -quit)" \
-    && test -n "$SOURCE" \
-    && mkdir -p /app/out \
-    && javac -d /app/out "$SOURCE"
+
+COPY src/ ./src/
+
+RUN mkdir -p out \
+    && javac -d out src/main/java/com/veterinaria/ApiServer.java
+
+FROM eclipse-temurin:21-jre
+
+WORKDIR /app
+
+COPY --from=build /app/out ./out
+
 ENV PORT=8080
 ENV DATA_DIR=/data
+
 EXPOSE 8080
-VOLUME ["/data"]
+
 CMD ["java", "-cp", "out", "com.veterinaria.ApiServer"]
